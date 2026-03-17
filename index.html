@@ -1,0 +1,1587 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>大学物理实验数据助理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+      crossorigin="anonymous"
+    />
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      // Tailwind config for a calm academic palette
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Noto Sans SC", "ui-sans-serif", "system-ui"],
+            },
+            colors: {
+              ink: {
+                50: "#F7FAFF",
+                100: "#EEF4FF",
+                200: "#DAE6FF",
+                300: "#B8CCFF",
+                400: "#86A6FF",
+                500: "#5B7FFF",
+                600: "#3F5BFF",
+                700: "#2F43D6",
+                800: "#2535A8",
+                900: "#1F2F7F",
+              },
+            },
+            boxShadow: {
+              soft: "0 10px 30px rgba(15, 23, 42, 0.08)",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      html,
+      body {
+        height: 100%;
+      }
+      /* Slightly nicer number input on Windows */
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-gradient-to-b from-ink-50 to-white text-slate-800">
+    <div class="mx-auto max-w-6xl px-4 py-8">
+      <header class="mb-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+              大学物理实验数据助理
+            </h1>
+            <p class="mt-1 text-sm text-slate-600">
+              平均值与不确定度（A 类 / B 类 / 合成）实时计算，并按“4舍6入5凑偶”规则修约。
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center rounded-full bg-ink-100 px-3 py-1 text-xs font-semibold text-ink-800">
+              Academic UI · Tailwind CSS
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main class="grid gap-6 lg:grid-cols-12">
+        <!-- Left: Inputs -->
+        <section class="lg:col-span-7">
+          <div class="rounded-2xl border border-slate-200 bg-white shadow-soft">
+            <div class="border-b border-slate-100 px-5 py-4">
+              <h2 class="text-base font-semibold text-slate-900">输入区</h2>
+              <p class="mt-1 text-sm text-slate-600">
+                选择实验模板后，按提示录入数据；右侧将实时给出计算结果与不确定度。
+              </p>
+            </div>
+
+            <div class="space-y-5 px-5 py-5">
+              <div class="grid gap-4 sm:grid-cols-2">
+                <label class="block">
+                  <span class="text-sm font-semibold text-slate-700">实验切换</span>
+                  <select
+                    id="expSelect"
+                    class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                  >
+                    <option value="generic">通用：均值与不确定度（单变量）</option>
+                    <option value="density">实验 1：力学基本测量（密度测定）</option>
+                    <option value="vi">实验 10：电学基本测量（伏安特性）</option>
+                  </select>
+                  <p class="mt-1 text-xs text-slate-500">已集成 \(t_p\)（P=95%）与修约</p>
+                </label>
+
+                <label class="block">
+                  <span class="text-sm font-semibold text-slate-700">实验名称</span>
+                  <input
+                    id="expName"
+                    type="text"
+                    placeholder="例如：单摆测重力加速度"
+                    class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none ring-0 transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                  />
+                </label>
+              </div>
+
+              <div class="grid gap-4 sm:grid-cols-2">
+                <label class="block">
+                  <span class="text-sm font-semibold text-slate-700">保留小数位（显示）</span>
+                  <input
+                    id="decimals"
+                    type="number"
+                    min="0"
+                    max="12"
+                    step="1"
+                    value="4"
+                    class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                  />
+                  <p class="mt-1 text-xs text-slate-500">所有最终结果按此小数位修约</p>
+                </label>
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <div class="text-xs font-semibold text-slate-500">\(t_p\) 置信因子（学生 t，双侧）</div>
+                      <p class="mt-1 text-xs text-slate-500">按教材常用置信概率 \(P\) 选择</p>
+                    </div>
+                    <label class="block">
+                      <span class="sr-only">P</span>
+                      <select
+                        id="pSelect"
+                        class="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                      >
+                        <option value="0.683" selected>P=0.683</option>
+                        <option value="0.954">P=0.954</option>
+                        <option value="0.997">P=0.997</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="mt-1 flex items-baseline justify-between gap-3">
+                    <div class="text-lg font-bold text-slate-900"><span id="tpOut">—</span></div>
+                    <div class="text-right text-xs text-slate-500">
+                      <div>自由度：<span id="dfOut" class="font-semibold text-slate-700">—</span></div>
+                      <div class="mt-1">数据量 \(n\)：<span id="nForTpOut" class="font-semibold text-slate-700">—</span></div>
+                    </div>
+                  </div>
+                  <p class="mt-2 text-xs text-slate-500">
+                    内置教材表（部分 \(n\)），其余由近似算法计算；最终展示统一用“4舍6入5凑偶”修约。
+                  </p>
+                </div>
+              </div>
+
+              <!-- Generic panel -->
+              <div id="panelGeneric" class="space-y-3">
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <label class="block">
+                    <span class="text-sm font-semibold text-slate-700">仪器误差 \(\Delta\)</span>
+                    <div class="mt-2 grid grid-cols-[1fr_auto] gap-2">
+                      <input
+                        id="delta"
+                        type="number"
+                        step="any"
+                        inputmode="decimal"
+                        placeholder="例如：0.02"
+                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                      />
+                      <select
+                        id="xUnit"
+                        class="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                      >
+                        <option value="mm">mm</option>
+                        <option value="cm">cm</option>
+                        <option value="m" selected>m</option>
+                        <option value="g">g</option>
+                        <option value="kg">kg</option>
+                        <option value="s">s</option>
+                        <option value="V">V</option>
+                        <option value="A">A</option>
+                        <option value="Ohm">Ω</option>
+                      </select>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500">用于 \(u_B = \Delta/\sqrt{3}\)</p>
+                  </label>
+
+                  <div class="flex items-end justify-end gap-2">
+                    <button
+                      id="addRowBtn"
+                      type="button"
+                      class="inline-flex items-center rounded-xl bg-ink-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-ink-700 focus:outline-none focus:ring-4 focus:ring-ink-200"
+                    >
+                      增加数据行
+                    </button>
+                    <button
+                      id="clearBtn"
+                      type="button"
+                      class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200"
+                    >
+                      清空
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h3 class="text-sm font-semibold text-slate-900">测量数据表 \(x_i\)</h3>
+                      <p class="mt-1 text-xs text-slate-500">支持空行；只会统计有效数字输入。</p>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 overflow-hidden rounded-2xl border border-slate-200">
+                    <table class="w-full table-fixed">
+                      <thead class="bg-slate-50">
+                        <tr>
+                          <th class="w-16 px-3 py-2 text-left text-xs font-semibold text-slate-600">序号</th>
+                          <th class="px-3 py-2 text-left text-xs font-semibold text-slate-600">\(x_i\)</th>
+                          <th class="w-20 px-3 py-2 text-right text-xs font-semibold text-slate-600">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tbody" class="bg-white"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Density panel -->
+              <div id="panelDensity" class="hidden space-y-4">
+                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div class="text-sm font-semibold text-slate-900">实验 1：力学基本测量（密度测定）</div>
+                  <p class="mt-1 text-xs text-slate-600">
+                    圆柱体：\(\rho = \frac{4M}{\pi d^2 L}\)，其中 \(M\) 单次测量，\(d,L\) 多次测量。
+                  </p>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <label class="block">
+                    <span class="text-sm font-semibold text-slate-700">质量 \(M\)（单次）</span>
+                    <div class="mt-2 grid grid-cols-[1fr_auto] gap-2">
+                      <input
+                        id="M"
+                        type="number"
+                        step="any"
+                        inputmode="decimal"
+                        placeholder="例如：12.35"
+                        class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                      />
+                      <select
+                        id="MUnit"
+                        class="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                      >
+                        <option value="g" selected>g</option>
+                        <option value="kg">kg</option>
+                      </select>
+                    </div>
+                  </label>
+                  <label class="block">
+                    <span class="text-sm font-semibold text-slate-700">质量仪器误差 \(\Delta_M\)</span>
+                    <input
+                      id="deltaM"
+                      type="number"
+                      step="any"
+                      inputmode="decimal"
+                      placeholder="例如：0.01"
+                      class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                    />
+                    <p class="mt-1 text-xs text-slate-500">\(u_M = \Delta_M/\sqrt{3}\)</p>
+                  </label>
+                </div>
+
+                <div class="grid gap-4 lg:grid-cols-2">
+                  <div class="space-y-2 rounded-2xl border border-slate-200 bg-white p-4">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <div class="text-sm font-semibold text-slate-900">直径 \(d\)（多次）</div>
+                        <p class="mt-1 text-xs text-slate-500">统计 \(n_d\) 计算 \(u_{A,d}\) 与 \(u_{c,d}\)</p>
+                      </div>
+                      <button
+                        id="addDRowBtn"
+                        type="button"
+                        class="inline-flex items-center rounded-xl bg-ink-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-ink-700 focus:outline-none focus:ring-4 focus:ring-ink-200"
+                      >
+                        增加
+                      </button>
+                    </div>
+                    <label class="block">
+                      <span class="text-xs font-semibold text-slate-600">仪器误差 \(\Delta_d\)</span>
+                      <div class="mt-1 grid grid-cols-[1fr_auto] gap-2">
+                        <input
+                          id="deltaD"
+                          type="number"
+                          step="any"
+                          inputmode="decimal"
+                          placeholder="例如：0.02"
+                          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                        />
+                        <select
+                          id="dUnit"
+                          class="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                        >
+                          <option value="mm" selected>mm</option>
+                          <option value="cm">cm</option>
+                          <option value="m">m</option>
+                        </select>
+                      </div>
+                      <p class="mt-1 text-xs text-slate-500">\(u_{B,d}=\Delta_d/\sqrt{3}\)</p>
+                    </label>
+                    <div class="overflow-hidden rounded-2xl border border-slate-200">
+                      <table class="w-full table-fixed">
+                        <thead class="bg-slate-50">
+                          <tr>
+                            <th class="w-16 px-3 py-2 text-left text-xs font-semibold text-slate-600">序号</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-slate-600">\(d_i\)</th>
+                            <th class="w-20 px-3 py-2 text-right text-xs font-semibold text-slate-600">操作</th>
+                          </tr>
+                        </thead>
+                        <tbody id="dTbody" class="bg-white"></tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div class="space-y-2 rounded-2xl border border-slate-200 bg-white p-4">
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <div class="text-sm font-semibold text-slate-900">长度 \(L\)（多次）</div>
+                        <p class="mt-1 text-xs text-slate-500">统计 \(n_L\) 计算 \(u_{A,L}\) 与 \(u_{c,L}\)</p>
+                      </div>
+                      <button
+                        id="addLRowBtn"
+                        type="button"
+                        class="inline-flex items-center rounded-xl bg-ink-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-ink-700 focus:outline-none focus:ring-4 focus:ring-ink-200"
+                      >
+                        增加
+                      </button>
+                    </div>
+                    <label class="block">
+                      <span class="text-xs font-semibold text-slate-600">仪器误差 \(\Delta_L\)</span>
+                      <div class="mt-1 grid grid-cols-[1fr_auto] gap-2">
+                        <input
+                          id="deltaL"
+                          type="number"
+                          step="any"
+                          inputmode="decimal"
+                          placeholder="例如：0.02"
+                          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                        />
+                        <select
+                          id="LUnit"
+                          class="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                        >
+                          <option value="mm" selected>mm</option>
+                          <option value="cm">cm</option>
+                          <option value="m">m</option>
+                        </select>
+                      </div>
+                      <p class="mt-1 text-xs text-slate-500">\(u_{B,L}=\Delta_L/\sqrt{3}\)</p>
+                    </label>
+                    <div class="overflow-hidden rounded-2xl border border-slate-200">
+                      <table class="w-full table-fixed">
+                        <thead class="bg-slate-50">
+                          <tr>
+                            <th class="w-16 px-3 py-2 text-left text-xs font-semibold text-slate-600">序号</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-slate-600">\(L_i\)</th>
+                            <th class="w-20 px-3 py-2 text-right text-xs font-semibold text-slate-600">操作</th>
+                          </tr>
+                        </thead>
+                        <tbody id="lTbody" class="bg-white"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2">
+                  <button
+                    id="clearDensityBtn"
+                    type="button"
+                    class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200"
+                  >
+                    清空本实验
+                  </button>
+                </div>
+              </div>
+
+              <!-- VI panel -->
+              <div id="panelVI" class="hidden space-y-4">
+                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div class="text-sm font-semibold text-slate-900">实验 10：电学基本测量（伏安特性）</div>
+                  <p class="mt-1 text-xs text-slate-600">
+                    \(R_i = V_i/I_i\)，对 \(R\) 序列求 \(\bar{R}, u_A\)，并结合电表不确定度合成。
+                  </p>
+                </div>
+
+                <div class="grid gap-4 lg:grid-cols-2">
+                  <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div class="text-sm font-semibold text-slate-900">电压表参数</div>
+                    <div class="mt-3 grid grid-cols-2 gap-3">
+                      <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">等级（%）</span>
+                        <input
+                          id="gradeV"
+                          type="number"
+                          step="any"
+                          inputmode="decimal"
+                          placeholder="例如：0.5"
+                          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                        />
+                      </label>
+                      <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">量程（V）</span>
+                        <div class="mt-1 grid grid-cols-[1fr_auto] gap-2">
+                          <input
+                            id="rangeV"
+                            type="number"
+                            step="any"
+                            inputmode="decimal"
+                            placeholder="例如：3"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                          />
+                          <select
+                            id="rangeVUnit"
+                            class="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                          >
+                            <option value="V" selected>V</option>
+                            <option value="mV">mV</option>
+                          </select>
+                        </div>
+                      </label>
+                    </div>
+                    <p class="mt-2 text-xs text-slate-500">
+                      取 \(\Delta_V = \text{等级}\%\times\text{量程}\)，\(u_V=\Delta_V/\sqrt{3}\)
+                    </p>
+                  </div>
+
+                  <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div class="text-sm font-semibold text-slate-900">电流表参数</div>
+                    <div class="mt-3 grid grid-cols-2 gap-3">
+                      <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">等级（%）</span>
+                        <input
+                          id="gradeI"
+                          type="number"
+                          step="any"
+                          inputmode="decimal"
+                          placeholder="例如：0.5"
+                          class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                        />
+                      </label>
+                      <label class="block">
+                        <span class="text-xs font-semibold text-slate-600">量程（A）</span>
+                        <div class="mt-1 grid grid-cols-[1fr_auto] gap-2">
+                          <input
+                            id="rangeI"
+                            type="number"
+                            step="any"
+                            inputmode="decimal"
+                            placeholder="例如：0.6"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                          />
+                          <select
+                            id="rangeIUnit"
+                            class="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                          >
+                            <option value="A" selected>A</option>
+                            <option value="mA">mA</option>
+                          </select>
+                        </div>
+                      </label>
+                    </div>
+                    <p class="mt-2 text-xs text-slate-500">
+                      取 \(\Delta_I = \text{等级}\%\times\text{量程}\)，\(u_I=\Delta_I/\sqrt{3}\)
+                    </p>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="text-sm font-semibold text-slate-900">数据表（\(V_i\), \(I_i\)）</div>
+                      <p class="mt-1 text-xs text-slate-500">空行将被忽略；仅统计有效数值行。</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button
+                        id="addVIRowBtn"
+                        type="button"
+                        class="inline-flex items-center rounded-xl bg-ink-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-ink-700 focus:outline-none focus:ring-4 focus:ring-ink-200"
+                      >
+                        增加数据行
+                      </button>
+                      <button
+                        id="clearVIBtn"
+                        type="button"
+                        class="inline-flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200"
+                      >
+                        清空本实验
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                    <label class="block">
+                      <span class="text-xs font-semibold text-slate-600">电压单位</span>
+                      <select
+                        id="VUnit"
+                        class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                      >
+                        <option value="V" selected>V</option>
+                        <option value="mV">mV</option>
+                      </select>
+                    </label>
+                    <label class="block">
+                      <span class="text-xs font-semibold text-slate-600">电流单位</span>
+                      <select
+                        id="IUnit"
+                        class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+                      >
+                        <option value="A" selected>A</option>
+                        <option value="mA">mA</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div class="mt-3 overflow-hidden rounded-2xl border border-slate-200">
+                    <table class="w-full table-fixed">
+                      <thead class="bg-slate-50">
+                        <tr>
+                          <th class="w-16 px-3 py-2 text-left text-xs font-semibold text-slate-600">序号</th>
+                          <th class="px-3 py-2 text-left text-xs font-semibold text-slate-600">\(V_i\)</th>
+                          <th class="px-3 py-2 text-left text-xs font-semibold text-slate-600">\(I_i\)</th>
+                          <th class="w-20 px-3 py-2 text-right text-xs font-semibold text-slate-600">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody id="viTbody" class="bg-white"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right: Results -->
+        <aside class="lg:col-span-5">
+          <div class="rounded-2xl border border-slate-200 bg-white shadow-soft">
+            <div class="border-b border-slate-100 px-5 py-4">
+              <h2 class="text-base font-semibold text-slate-900">结果区（实时）</h2>
+              <p class="mt-1 text-sm text-slate-600">
+                结果均按“4舍6入5凑偶”修约，并给出 \(t_p\)（P=95%）对应的扩展不确定度 \(U=t_pu_c\)。
+              </p>
+            </div>
+
+            <div class="space-y-4 px-5 py-5">
+              <div class="rounded-2xl bg-slate-50 p-4">
+                <div class="text-xs font-semibold text-slate-500">当前实验</div>
+                <div id="expNameShow" class="mt-1 truncate text-sm font-semibold text-slate-900">
+                  （未填写）
+                </div>
+              </div>
+
+              <div id="resultGeneric" class="grid gap-3">
+                <div class="rounded-2xl border border-slate-200 p-4">
+                  <div class="flex items-baseline justify-between gap-3">
+                    <div>
+                      <div class="text-xs font-semibold text-slate-500">\(\bar{x}\) 平均值</div>
+                      <div class="mt-1 text-xl font-bold text-slate-900">
+                        <span id="meanOut">—</span>
+                      </div>
+                    </div>
+                    <div class="text-right text-xs text-slate-500">
+                      <div>有效数据 \(n\)：<span id="nOut" class="font-semibold text-slate-700">0</span></div>
+                      <div class="mt-1">修约：<span id="roundOut" class="font-semibold text-slate-700">—</span></div>
+                    </div>
+                  </div>
+                  <div class="mt-2 text-xs text-slate-600">
+                    最终表达式：<span id="xExprOut" class="font-semibold text-slate-900">—</span>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 p-4">
+                  <div class="text-xs font-semibold text-slate-500">A 类标准不确定度</div>
+                  <div class="mt-1 flex items-baseline justify-between gap-3">
+                    <div class="text-lg font-bold text-slate-900"><span id="uAOut">—</span></div>
+                    <div class="text-xs text-slate-500">\(u_A = \sqrt{\frac{\sum (x_i-\bar{x})^2}{n(n-1)}}\)</div>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 p-4">
+                  <div class="text-xs font-semibold text-slate-500">B 类标准不确定度</div>
+                  <div class="mt-1 flex items-baseline justify-between gap-3">
+                    <div class="text-lg font-bold text-slate-900"><span id="uBOut">—</span></div>
+                    <div class="text-xs text-slate-500">\(u_B = \Delta/\sqrt{3}\)</div>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-gradient-to-b from-ink-50 to-white p-4">
+                  <div class="text-xs font-semibold text-slate-500">合成标准不确定度</div>
+                  <div class="mt-1 flex items-baseline justify-between gap-3">
+                    <div class="text-xl font-bold text-ink-800"><span id="uCOut">—</span></div>
+                    <div class="text-xs text-slate-500">\(u_c = \sqrt{u_A^2+u_B^2}\)</div>
+                  </div>
+                  <div class="mt-2 text-xs text-slate-600">
+                    扩展不确定度：\(U=t_pu_c\) = <span id="uExpOut" class="font-semibold text-slate-800">—</span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="resultDensity" class="hidden grid gap-3">
+                <div class="rounded-2xl border border-slate-200 p-4">
+                  <div class="text-xs font-semibold text-slate-500">\(\bar{\rho}\)（圆柱体）</div>
+                  <div class="mt-1 text-xl font-bold text-slate-900"><span id="rhoOut">—</span></div>
+                  <div class="mt-2 grid grid-cols-2 gap-3 text-xs text-slate-600">
+                    <div>\(\bar{d}\)：<span id="dMeanOut" class="font-semibold text-slate-800">—</span></div>
+                    <div>\(\bar{L}\)：<span id="lMeanOut" class="font-semibold text-slate-800">—</span></div>
+                    <div>\(n_d\)：<span id="ndOut" class="font-semibold text-slate-800">0</span></div>
+                    <div>\(n_L\)：<span id="nL2Out" class="font-semibold text-slate-800">0</span></div>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 p-4">
+                  <div class="text-xs font-semibold text-slate-500">不确定度传播（给定）</div>
+                  <div class="mt-1 text-xs text-slate-600">
+                    \(u_{\rho} = \rho \cdot \sqrt{(\frac{u_M}{M})^2 + (2\frac{u_d}{d})^2 + (\frac{u_L}{L})^2}\)
+                  </div>
+                  <div class="mt-3 grid grid-cols-3 gap-3 text-sm">
+                    <div class="rounded-xl bg-slate-50 p-3">
+                      <div class="text-xs font-semibold text-slate-500">A 类 \(u_A\)</div>
+                      <div class="mt-1 text-lg font-bold text-slate-900"><span id="uARhoOut">—</span></div>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 p-3">
+                      <div class="text-xs font-semibold text-slate-500">B 类 \(u_B\)</div>
+                      <div class="mt-1 text-lg font-bold text-slate-900"><span id="uBRhoOut">—</span></div>
+                    </div>
+                    <div class="rounded-xl bg-ink-50 p-3">
+                      <div class="text-xs font-semibold text-slate-500">合成 \(u_c\)</div>
+                      <div class="mt-1 text-lg font-bold text-ink-800"><span id="uRhoOut">—</span></div>
+                    </div>
+                  </div>
+                  <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                    <div class="rounded-xl bg-slate-50 p-3">
+                      <div class="text-xs font-semibold text-slate-500">最终表达式</div>
+                      <div class="mt-1 text-sm font-bold text-slate-900"><span id="rhoExprOut">—</span></div>
+                    </div>
+                    <div class="rounded-xl bg-ink-50 p-3">
+                      <div class="text-xs font-semibold text-slate-500">扩展不确定度 \(U=t_pu_\rho\)</div>
+                      <div class="mt-1 text-lg font-bold text-ink-800"><span id="URhoOut">—</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 p-4">
+                  <div class="text-xs font-semibold text-slate-500">中间量（标准不确定度）</div>
+                  <div class="mt-2 grid grid-cols-2 gap-3 text-xs text-slate-600">
+                    <div>\(u_M\)：<span id="uMOut" class="font-semibold text-slate-800">—</span></div>
+                    <div>\(u_{c,d}\)：<span id="uDOut" class="font-semibold text-slate-800">—</span></div>
+                    <div>\(u_{c,L}\)：<span id="uLOut2" class="font-semibold text-slate-800">—</span></div>
+                    <div>\(t_p\)：<span id="tpDensityOut" class="font-semibold text-slate-800">—</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="resultVI" class="hidden grid gap-3">
+                <div class="rounded-2xl border border-slate-200 p-4">
+                  <div class="text-xs font-semibold text-slate-500">\(\bar{R}\)</div>
+                  <div class="mt-1 text-xl font-bold text-slate-900"><span id="rMeanOut">—</span></div>
+                  <div class="mt-2 text-xs text-slate-600">
+                    有效数据 \(n\)：<span id="nVIOut" class="font-semibold text-slate-800">0</span>
+                    ，\(t_p\)：<span id="tpVIOut" class="font-semibold text-slate-800">—</span>
+                  </div>
+                  <div class="mt-2 text-xs text-slate-600">
+                    最终表达式：<span id="rExprOut" class="font-semibold text-slate-900">—</span>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 p-4">
+                  <div class="text-xs font-semibold text-slate-500">不确定度（\(\bar{R}\)）</div>
+                  <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                    <div class="rounded-xl bg-slate-50 p-3">
+                      <div class="text-xs font-semibold text-slate-500">A 类 \(u_A\)</div>
+                      <div class="mt-1 text-lg font-bold text-slate-900"><span id="uAROut">—</span></div>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 p-3">
+                      <div class="text-xs font-semibold text-slate-500">B 类（由电表）\(u_B\)</div>
+                      <div class="mt-1 text-lg font-bold text-slate-900"><span id="uBROut">—</span></div>
+                    </div>
+                    <div class="rounded-xl bg-ink-50 p-3">
+                      <div class="text-xs font-semibold text-slate-500">合成 \(u_c\)</div>
+                      <div class="mt-1 text-lg font-bold text-ink-800"><span id="uCROut">—</span></div>
+                    </div>
+                    <div class="rounded-xl bg-ink-50 p-3">
+                      <div class="text-xs font-semibold text-slate-500">扩展 \(U=t_pu_c\)</div>
+                      <div class="mt-1 text-lg font-bold text-ink-800"><span id="uExpROut">—</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 p-4">
+                  <div class="text-xs font-semibold text-slate-500">电表标准不确定度</div>
+                  <div class="mt-2 grid grid-cols-2 gap-3 text-xs text-slate-600">
+                    <div>\(\Delta_V\)：<span id="deltaVOut" class="font-semibold text-slate-800">—</span></div>
+                    <div>\(u_V\)：<span id="uVOut" class="font-semibold text-slate-800">—</span></div>
+                    <div>\(\Delta_I\)：<span id="deltaIOut" class="font-semibold text-slate-800">—</span></div>
+                    <div>\(u_I\)：<span id="uIOut" class="font-semibold text-slate-800">—</span></div>
+                  </div>
+                  <p class="mt-2 text-xs text-slate-500">
+                    B 类传播：\(u_R=\bar{R}\sqrt{(\frac{u_V}{\bar{V}})^2+(\frac{u_I}{\bar{I}})^2}\)
+                  </p>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                <div class="text-sm font-semibold text-slate-900">修约规则（4舍6入5凑偶）</div>
+                <ul class="mt-2 space-y-1 text-xs text-slate-600">
+                  <li>末位数字 &lt; 5：舍去</li>
+                  <li>末位数字 &gt; 5：进一</li>
+                  <li>末位数字 = 5：</li>
+                  <li class="ml-4">- 若 5 后仍有非零数字：进一</li>
+                  <li class="ml-4">- 若 5 后全为 0：看前一位奇偶，凑偶（前一位为奇则进一，为偶则舍去）</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="mt-6 text-center text-xs text-slate-500">
+        提示：至少输入 2 个有效数据时才可计算 \(u_A\)。所有结果按你设置的小数位进行修约显示。
+      </footer>
+    </div>
+
+    <template id="rowTpl">
+      <tr class="border-t border-slate-100">
+        <td class="px-3 py-2 text-sm text-slate-500">
+          <span class="rowIndex"></span>
+        </td>
+        <td class="px-3 py-2">
+          <input
+            class="xiInput w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+            type="number"
+            step="any"
+            inputmode="decimal"
+            placeholder="输入测量值"
+          />
+        </td>
+        <td class="px-3 py-2 text-right">
+          <button
+            type="button"
+            class="removeBtn inline-flex items-center rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200"
+          >
+            删除
+          </button>
+        </td>
+      </tr>
+    </template>
+
+    <template id="rowTplDL">
+      <tr class="border-t border-slate-100">
+        <td class="px-3 py-2 text-sm text-slate-500">
+          <span class="rowIndex"></span>
+        </td>
+        <td class="px-3 py-2">
+          <input
+            class="valInput w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+            type="number"
+            step="any"
+            inputmode="decimal"
+            placeholder="输入数值"
+          />
+        </td>
+        <td class="px-3 py-2 text-right">
+          <button
+            type="button"
+            class="removeBtn inline-flex items-center rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200"
+          >
+            删除
+          </button>
+        </td>
+      </tr>
+    </template>
+
+    <template id="rowTplVI">
+      <tr class="border-t border-slate-100">
+        <td class="px-3 py-2 text-sm text-slate-500">
+          <span class="rowIndex"></span>
+        </td>
+        <td class="px-3 py-2">
+          <input
+            class="vInput w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+            type="number"
+            step="any"
+            inputmode="decimal"
+            placeholder="V"
+          />
+        </td>
+        <td class="px-3 py-2">
+          <input
+            class="iInput w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-ink-400 focus:ring-4 focus:ring-ink-100"
+            type="number"
+            step="any"
+            inputmode="decimal"
+            placeholder="I"
+          />
+        </td>
+        <td class="px-3 py-2 text-right">
+          <button
+            type="button"
+            class="removeBtn inline-flex items-center rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-200"
+          >
+            删除
+          </button>
+        </td>
+      </tr>
+    </template>
+
+    <script>
+      /**
+       * 4舍6入5凑偶（银行家舍入），针对“保留小数位”的十进制修约。
+       * - digit < 5 -> down
+       * - digit > 5 -> up
+       * - digit == 5:
+       *   - if any following non-zero digits -> up
+       *   - else (exactly half) -> round to even
+       *
+       * We implement via decimal-string rounding to avoid most floating noise.
+       */
+      function bankersRoundToDecimals(value, decimals) {
+        if (!Number.isFinite(value)) return NaN;
+        const d = Math.max(0, Math.min(12, Math.trunc(decimals)));
+        if (value === 0) return 0;
+
+        const sign = value < 0 ? -1 : 1;
+        const abs = Math.abs(value);
+
+        // Use a plain decimal string (no toFixed) to avoid pre-rounding.
+        const { intPartRaw, fracRaw } = toPlainDecimalParts(abs);
+        const frac = (fracRaw || "").replace(/[^0-9]/g, "");
+
+        const keep = frac.padEnd(d, "0").slice(0, d);
+        const nextDigitChar = frac.length > d ? frac.charAt(d) : "0";
+        const restAfter = frac.length > d + 1 ? frac.slice(d + 1) : "";
+
+        const nextDigit = nextDigitChar.charCodeAt(0) - 48;
+        let roundUp = false;
+        if (nextDigit < 5) {
+          roundUp = false;
+        } else if (nextDigit > 5) {
+          roundUp = true;
+        } else {
+          // nextDigit == 5
+          const hasNonZeroAfter = /[1-9]/.test(restAfter);
+          if (hasNonZeroAfter) {
+            roundUp = true;
+          } else {
+            // tie -> round to even on last kept digit
+            const lastKeptDigit = d === 0 ? intPartRaw.slice(-1) : keep.slice(-1);
+            const lastDigit = lastKeptDigit ? lastKeptDigit.charCodeAt(0) - 48 : 0;
+            roundUp = lastDigit % 2 === 1;
+          }
+        }
+
+        const roundedStr = addOneAtDecimals(intPartRaw, keep, d, roundUp);
+        const num = Number(roundedStr);
+        return sign * num;
+      }
+
+      // scientificRound2: round to 2 significant digits using bankers rounding
+      function scientificRound2(value) {
+        if (!Number.isFinite(value)) return NaN;
+        if (value === 0) return 0;
+        const sign = value < 0 ? -1 : 1;
+        const abs = Math.abs(value);
+        const exp = Math.floor(Math.log10(abs));
+        const decimals = Math.max(0, 1 - exp); // 2 sig digits -> keep one digit after leading digit
+        const r = bankersRoundToDecimals(abs, Math.min(12, decimals));
+        return sign * r;
+      }
+
+      function fmtScientific2(value, fixedDecimalsFallback = 4) {
+        if (!Number.isFinite(value)) return "—";
+        const r = scientificRound2(value);
+        if (!Number.isFinite(r)) return "—";
+        // Prefer fixed to avoid scientific notation in UI
+        const abs = Math.abs(r);
+        if (abs === 0) return "0";
+        const exp = Math.floor(Math.log10(abs));
+        const decimals = Math.max(0, Math.min(12, 1 - exp));
+        return Number(r).toFixed(decimals);
+      }
+
+      // --- Units (internal conversion) ---
+      const UNIT_FACTORS = {
+        mm: 1e-3,
+        cm: 1e-2,
+        m: 1,
+        g: 1e-3,
+        kg: 1,
+        mV: 1e-3,
+        V: 1,
+        mA: 1e-3,
+        A: 1,
+        Ohm: 1,
+        kOhm: 1e3,
+        s: 1,
+      };
+
+      function unitFactor(unit) {
+        return UNIT_FACTORS[unit] ?? 1;
+      }
+
+      function getUnitLabel(unit) {
+        if (unit === "Ohm") return "Ω";
+        if (unit === "kOhm") return "kΩ";
+        return unit;
+      }
+
+      // --- Reporting-format rounding helpers (all based on 4舍6入5凑偶) ---
+      function roundToPlace(value, decimals) {
+        // decimals can be negative (round to tens, hundreds...)
+        if (!Number.isFinite(value)) return NaN;
+        const d = Math.trunc(decimals);
+        if (d >= 0) return bankersRoundToDecimals(value, d);
+        const factor = Math.pow(10, -d);
+        const scaled = value / factor;
+        const roundedScaled = bankersRoundToDecimals(scaled, 0);
+        return roundedScaled * factor;
+      }
+
+      function roundUpToPlace(value, decimals) {
+        // "只进不舍" for positive uncertainties
+        if (!Number.isFinite(value)) return NaN;
+        const d = Math.trunc(decimals);
+        if (d >= 0) {
+          const factor = Math.pow(10, d);
+          return Math.ceil(value * factor - 1e-12) / factor;
+        }
+        const factor = Math.pow(10, -d);
+        return Math.ceil(value / factor - 1e-12) * factor;
+      }
+
+      function roundUncertainty(u, mode) {
+        // u>0, keep 1 sig digit; if leading digit is 1 or 2 keep 2.
+        if (!(u > 0) || !Number.isFinite(u)) return { uRounded: NaN, decimals: 0, sigDigits: 0 };
+        const exp = Math.floor(Math.log10(u));
+        const leading = Math.floor(u / Math.pow(10, exp));
+        const sigDigits = leading === 1 || leading === 2 ? 2 : 1;
+        const decimals = sigDigits - 1 - exp; // may be negative
+        const uRounded = mode === "up" ? roundUpToPlace(u, decimals) : roundToPlace(u, decimals);
+        return { uRounded, decimals, sigDigits };
+      }
+
+      function formatFinalExpression(mean, U, unitLabel, uncertaintyMode = "bankers") {
+        if (!Number.isFinite(mean) || !Number.isFinite(U) || !(U > 0)) return { meanStr: "—", UStr: "—", expr: "—", decimals: 0 };
+        const { uRounded, decimals } = roundUncertainty(U, uncertaintyMode);
+        if (!Number.isFinite(uRounded) || !(uRounded > 0)) return { meanStr: "—", UStr: "—", expr: "—", decimals: 0 };
+
+        const meanRounded = roundToPlace(mean, decimals);
+        const dec = Math.max(0, decimals);
+        const meanStr = dec > 0 ? Number(meanRounded).toFixed(dec) : String(Math.round(meanRounded));
+        const UStr = dec > 0 ? Number(uRounded).toFixed(dec) : String(Math.round(uRounded));
+        return { meanStr, UStr, expr: `${meanStr} \\pm ${UStr}\\,\\text{${unitLabel}}`, decimals: dec };
+      }
+
+      // --- t_p lookup table (教材给定) + 近似算法补全 ---
+      // Nested object keyed by P, then by n (sample size).
+      const TP_TABLE = {
+        // P = 0.683 (教材给定，n=3..10)
+        "0.683": {
+          3: 1.32,
+          4: 1.2,
+          5: 1.14,
+          6: 1.11,
+          7: 1.09,
+          8: 1.08,
+          9: 1.07,
+          10: 1.06,
+        },
+        // P = 0.954 / 0.997：若教材表有值可在此补充；本页面会用近似算法自动计算
+        "0.954": {},
+        "0.997": {},
+      };
+
+      function invNorm(p) {
+        // Acklam's inverse normal approximation
+        if (!(p > 0 && p < 1)) return NaN;
+        const a = [
+          -3.969683028665376e1,
+          2.209460984245205e2,
+          -2.759285104469687e2,
+          1.38357751867269e2,
+          -3.066479806614716e1,
+          2.506628277459239,
+        ];
+        const b = [
+          -5.447609879822406e1,
+          1.615858368580409e2,
+          -1.556989798598866e2,
+          6.680131188771972e1,
+          -1.328068155288572e1,
+        ];
+        const c = [
+          -7.784894002430293e-3,
+          -3.223964580411365e-1,
+          -2.400758277161838,
+          -2.549732539343734,
+          4.374664141464968,
+          2.938163982698783,
+        ];
+        const d = [
+          7.784695709041462e-3,
+          3.224671290700398e-1,
+          2.445134137142996,
+          3.754408661907416,
+        ];
+        const plow = 0.02425;
+        const phigh = 1 - plow;
+        let q, r;
+        if (p < plow) {
+          q = Math.sqrt(-2 * Math.log(p));
+          return (
+            (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
+          );
+        }
+        if (p > phigh) {
+          q = Math.sqrt(-2 * Math.log(1 - p));
+          return -(
+            (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
+          );
+        }
+        q = p - 0.5;
+        r = q * q;
+        return (
+          (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+          (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1)
+        );
+      }
+
+      function tQuantileApprox(p, df) {
+        // Approximate inverse CDF for Student-t using a series in 1/df
+        if (!(p > 0 && p < 1) || !(df > 0)) return NaN;
+        const z = invNorm(p);
+        if (!Number.isFinite(z)) return NaN;
+        const z2 = z * z;
+        const z3 = z2 * z;
+        const z5 = z3 * z2;
+        const z7 = z5 * z2;
+        const d1 = df;
+        const d2 = d1 * d1;
+        const d3 = d2 * d1;
+        // Hill (1970)-style expansion
+        return (
+          z +
+          (z3 + z) / (4 * d1) +
+          (5 * z5 + 16 * z3 + 3 * z) / (96 * d2) +
+          (3 * z7 + 19 * z5 + 17 * z3 - 15 * z) / (384 * d3)
+        );
+      }
+
+      function getTp(P, n) {
+        const pKey = String(P);
+        const nn = Math.trunc(n);
+        const fromTable = TP_TABLE[pKey] && TP_TABLE[pKey][nn];
+        if (Number.isFinite(fromTable)) return fromTable;
+        if (nn < 2) return NaN;
+        const df = nn - 1;
+        const pCentral = Number(pKey);
+        if (!(pCentral > 0 && pCentral < 1)) return NaN;
+        const pQuant = (1 + pCentral) / 2;
+        return tQuantileApprox(pQuant, df);
+      }
+
+      function toPlainDecimalParts(num) {
+        // num is non-negative finite
+        let s = String(num);
+        if (!s.includes("e") && !s.includes("E")) {
+          const [i, f = ""] = s.split(".");
+          return { intPartRaw: i || "0", fracRaw: f };
+        }
+
+        // Expand exponential form without rounding.
+        const [mantissaStr, expStr] = s.toLowerCase().split("e");
+        const exp = parseInt(expStr, 10);
+        const [mInt, mFrac = ""] = mantissaStr.split(".");
+        const digitsAll = (mInt + mFrac).replace(/^0+/, "") || "0";
+        const mIntLen = mInt.replace(/^0+/, "").length || (mInt === "0" ? 1 : mInt.length);
+        const dotPos = mIntLen; // position of dot in digitsAll
+        const newDot = dotPos + exp;
+
+        let plain;
+        if (newDot <= 0) {
+          plain = "0." + "0".repeat(-newDot) + digitsAll;
+        } else if (newDot >= digitsAll.length) {
+          plain = digitsAll + "0".repeat(newDot - digitsAll.length);
+        } else {
+          plain = digitsAll.slice(0, newDot) + "." + digitsAll.slice(newDot);
+        }
+
+        const [i, f = ""] = plain.split(".");
+        return { intPartRaw: i || "0", fracRaw: f };
+      }
+
+      function addOneAtDecimals(intPart, fracKeep, decimals, roundUp) {
+        const d = decimals;
+        const normInt = (intPart || "0").replace(/^0+(?=\d)/, "") || "0";
+        if (!roundUp) {
+          if (d === 0) return normInt;
+          return normInt + "." + fracKeep.padEnd(d, "0");
+        }
+
+        // Treat kept digits as a big integer and add 1 at the last place.
+        const all = (normInt + fracKeep).replace(/^0+(?=\d)/, "");
+        const totalLen = normInt.length + fracKeep.length;
+        const padded = all.padStart(totalLen, "0");
+        const arr = padded.split("");
+        let carry = 1;
+        for (let i = arr.length - 1; i >= 0; i--) {
+          const digit = arr[i].charCodeAt(0) - 48;
+          const sum = digit + carry;
+          arr[i] = String(sum % 10);
+          carry = sum >= 10 ? 1 : 0;
+          if (!carry) break;
+        }
+        if (carry) arr.unshift("1");
+
+        const out = arr.join("");
+        if (d === 0) return out;
+        const intLen = out.length - d;
+        const outInt = out.slice(0, intLen);
+        const outFrac = out.slice(intLen).padEnd(d, "0");
+        return outInt + "." + outFrac;
+      }
+
+      function fmt(value, decimals) {
+        const d = Math.max(0, Math.min(12, Math.trunc(decimals)));
+        if (!Number.isFinite(value)) return "—";
+        const r = bankersRoundToDecimals(value, d);
+        if (!Number.isFinite(r)) return "—";
+        // Ensure fixed decimals for consistent academic display
+        if (d === 0) return Object.is(r, -0) ? "0" : String(r);
+        return Number(r).toFixed(d);
+      }
+
+      function parseNumbersFromTable() {
+        const inputs = Array.from(document.querySelectorAll(".xiInput"));
+        const xs = [];
+        for (const el of inputs) {
+          const v = Number(el.value);
+          if (Number.isFinite(v)) xs.push(v);
+        }
+        return xs;
+      }
+
+      function computeGeneric(xs, delta) {
+        const n = xs.length;
+        if (n === 0) return { n: 0, mean: NaN, uA: NaN, uB: finiteOrNaN(delta) ? Math.abs(delta) / Math.sqrt(3) : NaN, uC: NaN };
+        const mean = xs.reduce((a, b) => a + b, 0) / n;
+        let uA = NaN;
+        if (n >= 2) {
+          const sumSq = xs.reduce((acc, x) => acc + (x - mean) * (x - mean), 0);
+          uA = Math.sqrt(sumSq / (n * (n - 1)));
+        }
+        const uB = finiteOrNaN(delta) ? Math.abs(delta) / Math.sqrt(3) : NaN;
+        const uC = Number.isFinite(uA) && Number.isFinite(uB) ? Math.sqrt(uA * uA + uB * uB) : NaN;
+        return { n, mean, uA, uB, uC };
+      }
+
+      function finiteOrNaN(x) {
+        return Number.isFinite(x) ? x : NaN;
+      }
+
+      function parseNumbersFromTbody(tbodySelector, inputClass) {
+        const inputs = Array.from(document.querySelectorAll(`${tbodySelector} .${inputClass}`));
+        const xs = [];
+        for (const el of inputs) {
+          const v = Number(el.value);
+          if (Number.isFinite(v)) xs.push(v);
+        }
+        return xs;
+      }
+
+      function statsMeanUA(xs) {
+        const n = xs.length;
+        if (n === 0) return { n: 0, mean: NaN, uA: NaN };
+        const mean = xs.reduce((a, b) => a + b, 0) / n;
+        if (n < 2) return { n, mean, uA: NaN };
+        const sumSq = xs.reduce((acc, x) => acc + (x - mean) * (x - mean), 0);
+        const uA = Math.sqrt(sumSq / (n * (n - 1)));
+        return { n, mean, uA };
+      }
+
+      function ucFromUAUB(uA, uB) {
+        if (!Number.isFinite(uA) && !Number.isFinite(uB)) return NaN;
+        const a = Number.isFinite(uA) ? uA : 0;
+        const b = Number.isFinite(uB) ? uB : 0;
+        return Math.sqrt(a * a + b * b);
+      }
+
+      function computeDensity() {
+        const MInput = Number(document.getElementById("M").value);
+        const deltaM = Number(document.getElementById("deltaM").value);
+        const deltaD = Number(document.getElementById("deltaD").value);
+        const deltaL = Number(document.getElementById("deltaL").value);
+
+        const MUnit = document.getElementById("MUnit").value;
+        const dUnit = document.getElementById("dUnit").value;
+        const LUnit = document.getElementById("LUnit").value;
+
+        const M = Number.isFinite(MInput) ? MInput * unitFactor(MUnit) : NaN; // kg
+        const ds = parseNumbersFromTbody("#dTbody", "valInput").map((v) => v * unitFactor(dUnit)); // m
+        const ls = parseNumbersFromTbody("#lTbody", "valInput").map((v) => v * unitFactor(LUnit)); // m
+
+        const { n: nd, mean: dMean, uA: uAd } = statsMeanUA(ds);
+        const { n: nL, mean: lMean, uA: uAL } = statsMeanUA(ls);
+
+        const uM = Number.isFinite(deltaM) ? (Math.abs(deltaM) * unitFactor(MUnit)) / Math.sqrt(3) : NaN;
+        const uBd = Number.isFinite(deltaD) ? (Math.abs(deltaD) * unitFactor(dUnit)) / Math.sqrt(3) : NaN;
+        const uBL = Number.isFinite(deltaL) ? (Math.abs(deltaL) * unitFactor(LUnit)) / Math.sqrt(3) : NaN;
+
+        const uCd = ucFromUAUB(uAd, uBd);
+        const uCL = ucFromUAUB(uAL, uBL);
+
+        let rho = NaN;
+        let uA_rho = NaN;
+        let uB_rho = NaN;
+        let uC_rho = NaN;
+        if (Number.isFinite(M) && Number.isFinite(dMean) && Number.isFinite(lMean) && dMean !== 0 && lMean !== 0) {
+          rho = (4 * M) / (Math.PI * dMean * dMean * lMean);
+          if (Number.isFinite(uAd) && Number.isFinite(uAL)) {
+            uA_rho = Math.abs(rho) * Math.sqrt((2 * (uAd / dMean)) * (2 * (uAd / dMean)) + (uAL / lMean) * (uAL / lMean));
+          }
+          if (Number.isFinite(uM) && Number.isFinite(uBd) && Number.isFinite(uBL) && M !== 0) {
+            uB_rho =
+              Math.abs(rho) *
+              Math.sqrt((uM / M) * (uM / M) + (2 * (uBd / dMean)) * (2 * (uBd / dMean)) + (uBL / lMean) * (uBL / lMean));
+          }
+          uC_rho = ucFromUAUB(uA_rho, uB_rho);
+        }
+
+        // choose tp based on the main repeated dimension set: use min(nd,nL) if both>=2, else whichever >=2
+        let nForTp = 0;
+        if (nd >= 2 && nL >= 2) nForTp = Math.min(nd, nL);
+        else if (nd >= 2) nForTp = nd;
+        else if (nL >= 2) nForTp = nL;
+
+        const P = Number(document.getElementById("pSelect").value);
+        const tp = nForTp >= 2 ? getTp(P, nForTp) : NaN;
+        const U = Number.isFinite(tp) && Number.isFinite(uC_rho) ? tp * uC_rho : NaN;
+
+        return { M, nd, nL, dMean, lMean, uM, uAd, uAL, uBd, uBL, uCd, uCL, rho, uA_rho, uB_rho, uC_rho, tp, U, nForTp };
+      }
+
+      function computeVI() {
+        const gradeV = Number(document.getElementById("gradeV").value);
+        const rangeV = Number(document.getElementById("rangeV").value);
+        const gradeI = Number(document.getElementById("gradeI").value);
+        const rangeI = Number(document.getElementById("rangeI").value);
+
+        const rangeVUnit = document.getElementById("rangeVUnit").value;
+        const rangeIUnit = document.getElementById("rangeIUnit").value;
+        const deltaV =
+          Number.isFinite(gradeV) && Number.isFinite(rangeV) ? (Math.abs(gradeV) * Math.abs(rangeV) * unitFactor(rangeVUnit)) / 100 : NaN;
+        const deltaI =
+          Number.isFinite(gradeI) && Number.isFinite(rangeI) ? (Math.abs(gradeI) * Math.abs(rangeI) * unitFactor(rangeIUnit)) / 100 : NaN;
+        const uV = Number.isFinite(deltaV) ? deltaV / Math.sqrt(3) : NaN;
+        const uI = Number.isFinite(deltaI) ? deltaI / Math.sqrt(3) : NaN;
+
+        const VUnit = document.getElementById("VUnit").value;
+        const IUnit = document.getElementById("IUnit").value;
+        const fV = unitFactor(VUnit);
+        const fI = unitFactor(IUnit);
+
+        const rows = Array.from(document.querySelectorAll("#viTbody tr"));
+        const Vs = [];
+        const Is = [];
+        const Rs = [];
+        for (const tr of rows) {
+          const v = Number(tr.querySelector(".vInput")?.value);
+          const i = Number(tr.querySelector(".iInput")?.value);
+          if (Number.isFinite(v) && Number.isFinite(i) && i !== 0) {
+            const vv = v * fV; // in V
+            const ii = i * fI; // in A
+            if (ii === 0) continue;
+            Vs.push(vv);
+            Is.push(ii);
+            Rs.push(vv / ii); // in Ω
+          }
+        }
+
+        const { n, mean: rMean, uA } = statsMeanUA(Rs);
+        const vMean = Vs.length ? Vs.reduce((a, b) => a + b, 0) / Vs.length : NaN;
+        const iMean = Is.length ? Is.reduce((a, b) => a + b, 0) / Is.length : NaN;
+
+        let uB = NaN;
+        if (Number.isFinite(rMean) && Number.isFinite(uV) && Number.isFinite(uI) && Number.isFinite(vMean) && Number.isFinite(iMean) && vMean !== 0 && iMean !== 0) {
+          uB = Math.abs(rMean) * Math.sqrt((uV / vMean) * (uV / vMean) + (uI / iMean) * (uI / iMean));
+        }
+
+        const uC = ucFromUAUB(uA, uB);
+        const P = Number(document.getElementById("pSelect").value);
+        const tp = n >= 2 ? getTp(P, n) : NaN;
+        const U = Number.isFinite(tp) && Number.isFinite(uC) ? tp * uC : NaN;
+
+        return { n, rMean, uA, uB, uC, tp, U, deltaV, uV, deltaI, uI, vMean, iMean };
+      }
+
+      function renderKaTeX() {
+        if (!window.renderMathInElement) return;
+        renderMathInElement(document.body, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "\\(", right: "\\)", display: false },
+            { left: "$", right: "$", display: false },
+          ],
+          throwOnError: false,
+        });
+      }
+
+      function addRow(value = "") {
+        const tpl = document.getElementById("rowTpl");
+        const node = tpl.content.cloneNode(true);
+        const tr = node.querySelector("tr");
+        const input = node.querySelector(".xiInput");
+        input.value = value;
+        input.addEventListener("input", recalc);
+        node.querySelector(".removeBtn").addEventListener("click", () => {
+          tr.remove();
+          syncRowIndices();
+          recalc();
+        });
+        document.getElementById("tbody").appendChild(node);
+        syncRowIndices();
+        recalc();
+      }
+
+      function syncRowIndices(tbodySelector = "#tbody") {
+        const rows = Array.from(document.querySelectorAll(`${tbodySelector} tr`));
+        rows.forEach((tr, i) => {
+          const el = tr.querySelector(".rowIndex");
+          if (el) el.textContent = String(i + 1);
+        });
+      }
+
+      function addDLRow(tbodyId, value = "") {
+        const tpl = document.getElementById("rowTplDL");
+        const node = tpl.content.cloneNode(true);
+        const tr = node.querySelector("tr");
+        const input = node.querySelector(".valInput");
+        input.value = value;
+        input.addEventListener("input", recalc);
+        node.querySelector(".removeBtn").addEventListener("click", () => {
+          tr.remove();
+          syncRowIndices(`#${tbodyId}`);
+          recalc();
+        });
+        document.getElementById(tbodyId).appendChild(node);
+        syncRowIndices(`#${tbodyId}`);
+        recalc();
+      }
+
+      function addVIRow(v = "", i = "") {
+        const tpl = document.getElementById("rowTplVI");
+        const node = tpl.content.cloneNode(true);
+        const tr = node.querySelector("tr");
+        const vInput = node.querySelector(".vInput");
+        const iInput = node.querySelector(".iInput");
+        vInput.value = v;
+        iInput.value = i;
+        vInput.addEventListener("input", recalc);
+        iInput.addEventListener("input", recalc);
+        node.querySelector(".removeBtn").addEventListener("click", () => {
+          tr.remove();
+          syncRowIndices("#viTbody");
+          recalc();
+        });
+        document.getElementById("viTbody").appendChild(node);
+        syncRowIndices("#viTbody");
+        recalc();
+      }
+
+      function setVisiblePanel(expKey) {
+        const show = (id, on) => document.getElementById(id).classList.toggle("hidden", !on);
+        show("panelGeneric", expKey === "generic");
+        show("panelDensity", expKey === "density");
+        show("panelVI", expKey === "vi");
+
+        show("resultGeneric", expKey === "generic");
+        show("resultDensity", expKey === "density");
+        show("resultVI", expKey === "vi");
+      }
+
+      function recalc() {
+        const expName = document.getElementById("expName").value.trim();
+        document.getElementById("expNameShow").textContent = expName || "（未填写）";
+
+        const decimals = Number(document.getElementById("decimals").value);
+        const d = Number.isFinite(decimals) ? Math.max(0, Math.min(12, Math.trunc(decimals))) : 4;
+        document.getElementById("roundOut").textContent = `保留 ${d} 位小数`;
+
+        const expKey = document.getElementById("expSelect").value;
+        setVisiblePanel(expKey);
+
+        let nForTp = 0;
+        if (expKey === "generic") {
+          const unit = document.getElementById("xUnit").value;
+          const f = unitFactor(unit);
+          const delta = Number(document.getElementById("delta").value);
+          const xs = parseNumbersFromTable().map((v) => v * f);
+          const { n, mean, uA, uB, uC } = computeGeneric(xs, Number.isFinite(delta) ? delta * f : NaN);
+          nForTp = n;
+
+          document.getElementById("nOut").textContent = String(n);
+          document.getElementById("meanOut").textContent = n ? fmt(mean / f, d) : "—";
+          document.getElementById("uAOut").textContent = n >= 2 ? fmtScientific2(uA) : "—";
+          document.getElementById("uBOut").textContent = Number.isFinite(uB) ? fmtScientific2(uB) : "—";
+          document.getElementById("uCOut").textContent = Number.isFinite(uC) ? fmtScientific2(uC) : "—";
+
+          const P = Number(document.getElementById("pSelect").value);
+          const tp = n >= 2 ? getTp(P, n) : NaN;
+          const U = Number.isFinite(tp) && Number.isFinite(uC) ? tp * uC : NaN;
+          document.getElementById("uExpOut").textContent = Number.isFinite(U) ? fmtScientific2(U) : "—";
+
+          const unitLabel = getUnitLabel(unit);
+          const final = formatFinalExpression(mean / f, U / f, unitLabel, "bankers");
+          document.getElementById("xExprOut").textContent =
+            final.expr === "—" ? "—" : `x = (${final.meanStr} ± ${final.UStr}) ${unitLabel}`;
+        } else if (expKey === "density") {
+          const out = computeDensity();
+          nForTp = out.nForTp;
+
+          document.getElementById("ndOut").textContent = String(out.nd);
+          document.getElementById("nL2Out").textContent = String(out.nL);
+          document.getElementById("dMeanOut").textContent = Number.isFinite(out.dMean) ? fmt(out.dMean, d) : "—";
+          document.getElementById("lMeanOut").textContent = Number.isFinite(out.lMean) ? fmt(out.lMean, d) : "—";
+
+          document.getElementById("rhoOut").textContent = Number.isFinite(out.rho) ? fmt(out.rho, d) : "—";
+          document.getElementById("uMOut").textContent = Number.isFinite(out.uM) ? fmtScientific2(out.uM) : "—";
+          document.getElementById("uDOut").textContent = Number.isFinite(out.uCd) ? fmtScientific2(out.uCd) : "—";
+          document.getElementById("uLOut2").textContent = Number.isFinite(out.uCL) ? fmtScientific2(out.uCL) : "—";
+          document.getElementById("uARhoOut").textContent = Number.isFinite(out.uA_rho) ? fmtScientific2(out.uA_rho) : "—";
+          document.getElementById("uBRhoOut").textContent = Number.isFinite(out.uB_rho) ? fmtScientific2(out.uB_rho) : "—";
+          document.getElementById("uRhoOut").textContent = Number.isFinite(out.uC_rho) ? fmtScientific2(out.uC_rho) : "—";
+          document.getElementById("URhoOut").textContent = Number.isFinite(out.U) ? fmtScientific2(out.U) : "—";
+          document.getElementById("tpDensityOut").textContent = Number.isFinite(out.tp) ? fmt(out.tp, 3) : "—";
+
+          const unitLabel = "kg/m^3";
+          const final = formatFinalExpression(out.rho, out.U, unitLabel, "bankers");
+          document.getElementById("rhoExprOut").textContent =
+            final.expr === "—" ? "—" : `ρ = (${final.meanStr} ± ${final.UStr}) ${unitLabel}`;
+        } else if (expKey === "vi") {
+          const out = computeVI();
+          nForTp = out.n;
+
+          document.getElementById("nVIOut").textContent = String(out.n);
+          document.getElementById("rMeanOut").textContent = out.n ? fmt(out.rMean, d) : "—";
+          document.getElementById("uAROut").textContent = out.n >= 2 ? fmtScientific2(out.uA) : "—";
+          document.getElementById("uBROut").textContent = Number.isFinite(out.uB) ? fmtScientific2(out.uB) : "—";
+          document.getElementById("uCROut").textContent = Number.isFinite(out.uC) ? fmtScientific2(out.uC) : "—";
+          document.getElementById("uExpROut").textContent = Number.isFinite(out.U) ? fmtScientific2(out.U) : "—";
+          document.getElementById("tpVIOut").textContent = Number.isFinite(out.tp) ? fmt(out.tp, 3) : "—";
+
+          document.getElementById("deltaVOut").textContent = Number.isFinite(out.deltaV) ? fmt(out.deltaV, d) : "—";
+          document.getElementById("uVOut").textContent = Number.isFinite(out.uV) ? fmtScientific2(out.uV) : "—";
+          document.getElementById("deltaIOut").textContent = Number.isFinite(out.deltaI) ? fmt(out.deltaI, d) : "—";
+          document.getElementById("uIOut").textContent = Number.isFinite(out.uI) ? fmtScientific2(out.uI) : "—";
+
+          const unitLabel = "Ω";
+          const final = formatFinalExpression(out.rMean, out.U, unitLabel, "bankers");
+          document.getElementById("rExprOut").textContent =
+            final.expr === "—" ? "—" : `R = (${final.meanStr} ± ${final.UStr}) ${unitLabel}`;
+        }
+
+        // global tp card
+        document.getElementById("nForTpOut").textContent = nForTp ? String(nForTp) : "—";
+        document.getElementById("dfOut").textContent = nForTp >= 2 ? String(nForTp - 1) : "—";
+        const P = Number(document.getElementById("pSelect").value);
+        const tpShow = nForTp >= 2 ? getTp(P, nForTp) : NaN;
+        document.getElementById("tpOut").textContent = Number.isFinite(tpShow) ? fmt(tpShow, 3) : "—";
+      }
+
+      function init() {
+        // Seed with a few rows for convenience
+        addRow("");
+        addRow("");
+        addRow("");
+
+        addDLRow("dTbody", "");
+        addDLRow("dTbody", "");
+        addDLRow("dTbody", "");
+        addDLRow("lTbody", "");
+        addDLRow("lTbody", "");
+        addDLRow("lTbody", "");
+
+        addVIRow("", "");
+        addVIRow("", "");
+        addVIRow("", "");
+
+        document.getElementById("addRowBtn").addEventListener("click", () => addRow(""));
+        document.getElementById("clearBtn").addEventListener("click", () => {
+          document.getElementById("expName").value = "";
+          document.getElementById("delta").value = "";
+          document.getElementById("decimals").value = "4";
+          document.getElementById("tbody").innerHTML = "";
+          addRow("");
+          addRow("");
+          addRow("");
+          recalc();
+        });
+
+        document.getElementById("expName").addEventListener("input", recalc);
+        document.getElementById("delta").addEventListener("input", recalc);
+        document.getElementById("decimals").addEventListener("input", recalc);
+        document.getElementById("expSelect").addEventListener("change", recalc);
+        document.getElementById("pSelect").addEventListener("change", recalc);
+        document.getElementById("xUnit").addEventListener("change", recalc);
+        document.getElementById("MUnit").addEventListener("change", recalc);
+        document.getElementById("dUnit").addEventListener("change", recalc);
+        document.getElementById("LUnit").addEventListener("change", recalc);
+        document.getElementById("rangeVUnit").addEventListener("change", recalc);
+        document.getElementById("rangeIUnit").addEventListener("change", recalc);
+        document.getElementById("VUnit").addEventListener("change", recalc);
+        document.getElementById("IUnit").addEventListener("change", recalc);
+
+        document.getElementById("addDRowBtn").addEventListener("click", () => addDLRow("dTbody", ""));
+        document.getElementById("addLRowBtn").addEventListener("click", () => addDLRow("lTbody", ""));
+
+        for (const id of ["M", "deltaM", "deltaD", "deltaL"]) {
+          document.getElementById(id).addEventListener("input", recalc);
+        }
+        document.getElementById("clearDensityBtn").addEventListener("click", () => {
+          document.getElementById("M").value = "";
+          document.getElementById("deltaM").value = "";
+          document.getElementById("deltaD").value = "";
+          document.getElementById("deltaL").value = "";
+          document.getElementById("dTbody").innerHTML = "";
+          document.getElementById("lTbody").innerHTML = "";
+          addDLRow("dTbody", "");
+          addDLRow("dTbody", "");
+          addDLRow("dTbody", "");
+          addDLRow("lTbody", "");
+          addDLRow("lTbody", "");
+          addDLRow("lTbody", "");
+          recalc();
+        });
+
+        document.getElementById("addVIRowBtn").addEventListener("click", () => addVIRow("", ""));
+        document.getElementById("clearVIBtn").addEventListener("click", () => {
+          for (const id of ["gradeV", "rangeV", "gradeI", "rangeI"]) document.getElementById(id).value = "";
+          document.getElementById("viTbody").innerHTML = "";
+          addVIRow("", "");
+          addVIRow("", "");
+          addVIRow("", "");
+          recalc();
+        });
+        for (const id of ["gradeV", "rangeV", "gradeI", "rangeI"]) {
+          document.getElementById(id).addEventListener("input", recalc);
+        }
+
+        renderKaTeX();
+        recalc();
+      }
+
+      window.addEventListener("DOMContentLoaded", init);
+    </script>
+  </body>
+</html>
+
