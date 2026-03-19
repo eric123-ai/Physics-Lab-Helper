@@ -898,6 +898,7 @@
                     <div class="text-lg font-bold text-slate-900 min-w-0"><span id="uAOut" class="num-scroll">—</span></div>
                     <div class="text-xs text-slate-500">\(\,u_A = t_p \cdot S_{\bar{x}},\; S_{\bar{x}} = \sqrt{\frac{\sum (x_i-\bar{x})^2}{n(n-1)}}\)</div>
                   </div>
+                  <div id="uATip" class="mt-2 hidden text-[10px] text-slate-500">单次测量无法统计 A 类不确定度，记为 0</div>
                 </div>
 
                 <div class="rounded-2xl border border-slate-200 p-4">
@@ -1704,19 +1705,20 @@
         const mean = xs.reduce((a, b) => a + b, 0) / n;
 
         // S_bar: 样本均值的标准差
-        let Sbar = NaN;
-        if (n >= 2) {
+        let Sbar = 0;
+        if (n > 1) {
           const sumSq = xs.reduce((acc, x) => acc + (x - mean) * (x - mean), 0);
-          Sbar = Math.sqrt(sumSq / (n * (n - 1)));
+          const denom = n * (n - 1);
+          Sbar = denom > 0 ? Math.sqrt(sumSq / denom) : 0;
         }
 
         // B 类标准不确定度
         const uB = finiteOrNaN(delta) ? Math.abs(delta) / Math.sqrt(3) : NaN;
 
         const P = Number(document.getElementById("pSelect").value);
-        const tp = n >= 2 ? getTp(P, n) : NaN;
-        const uA = n >= 2 && Number.isFinite(tp) && Number.isFinite(Sbar) ? tp * Sbar : NaN;
-        const uC = Number.isFinite(uA) && Number.isFinite(uB) ? Math.sqrt(uA * uA + uB * uB) : NaN;
+        const tp = n > 1 ? getTp(P, n) : NaN;
+        const uA = n > 1 && Number.isFinite(tp) ? tp * Sbar : 0;
+        const uC = Number.isFinite(uB) ? Math.sqrt(uA * uA + uB * uB) : NaN;
         const U = uC;
         return { n, mean, Sbar, uA, uB, uC, tp, U };
       }
@@ -1739,9 +1741,10 @@
         const n = xs.length;
         if (n === 0) return { n: 0, mean: NaN, uA: NaN };
         const mean = xs.reduce((a, b) => a + b, 0) / n;
-        if (n < 2) return { n, mean, uA: NaN };
+        if (n < 2) return { n, mean, uA: 0 };
         const sumSq = xs.reduce((acc, x) => acc + (x - mean) * (x - mean), 0);
-        const uA = Math.sqrt(sumSq / (n * (n - 1)));
+        const denom = n * (n - 1);
+        const uA = denom > 0 ? Math.sqrt(sumSq / denom) : 0;
         return { n, mean, uA };
       }
 
@@ -1870,9 +1873,9 @@
         const iMean = Is.length ? Is.reduce((a, b) => a + b, 0) / Is.length : NaN;
 
         const P = Number(document.getElementById("pSelect").value);
-        const tp = n >= 2 ? getTp(P, n) : NaN;
+        const tp = n > 1 ? getTp(P, n) : NaN;
 
-        const uA = Number.isFinite(tp) && Number.isFinite(Sr) ? tp * Sr : NaN;
+        const uA = n > 1 && Number.isFinite(tp) ? tp * Sr : 0;
 
         let uB = NaN;
         if (Number.isFinite(rMean) && Number.isFinite(uV) && Number.isFinite(uI) && Number.isFinite(vMean) && Number.isFinite(iMean) && vMean !== 0 && iMean !== 0) {
@@ -2037,8 +2040,15 @@
           setDecimalsInput(decClamped);
           d = decClamped;
 
-          document.getElementById("uAOut").textContent = n >= 2 ? formatUncertaintyAtDecimals(uADisp, masterDecimals) : "—";
-          document.getElementById("uBOut").textContent = formatUncertaintyAtDecimals(uBDisp, masterDecimals);
+          const uATip = document.getElementById("uATip");
+          if (uATip) uATip.classList.toggle("hidden", n !== 1);
+
+          document.getElementById("uAOut").textContent = n ? formatUncertaintyAtDecimals(uADisp, masterDecimals) : "—";
+
+          const uBPack = Number.isFinite(uBDisp) && uBDisp > 0 ? roundUncertainty(uBDisp) : { decimals: masterDecimals };
+          const uBDecimals = Number.isFinite(uBPack.decimals) ? uBPack.decimals : masterDecimals;
+          document.getElementById("uBOut").textContent = formatUncertaintyAtDecimals(uBDisp, uBDecimals);
+
           document.getElementById("uCOut").textContent = formatUncertaintyAtDecimals(uCDisp, masterDecimals);
           document.getElementById("uExpOut").textContent = formatUncertaintyAtDecimals(UDisp, masterDecimals);
 
@@ -2202,7 +2212,7 @@
           setDecimalsInput(decClamped);
           d = decClamped;
 
-          document.getElementById("uAROut").textContent = out.n >= 2 ? formatUncertaintyAtDecimals(uADisp, masterDecimals) : "—";
+          document.getElementById("uAROut").textContent = out.n ? formatUncertaintyAtDecimals(uADisp, masterDecimals) : "—";
           document.getElementById("uBROut").textContent = formatUncertaintyAtDecimals(uBDisp, masterDecimals);
           document.getElementById("uCROut").textContent = formatUncertaintyAtDecimals(uCDisp, masterDecimals);
           document.getElementById("uExpROut").textContent = formatUncertaintyAtDecimals(UDisp, masterDecimals);
