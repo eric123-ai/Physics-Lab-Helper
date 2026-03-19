@@ -896,7 +896,7 @@
                   </div>
                   <div class="mt-1 flex items-baseline justify-between gap-3">
                     <div class="text-lg font-bold text-slate-900 min-w-0"><span id="uAOut" class="num-scroll">—</span></div>
-                    <div class="text-xs text-slate-500">\(\,u_A = S_{\bar{x}},\; S_{\bar{x}} = \sqrt{\frac{\sum (x_i-\bar{x})^2}{n(n-1)}}\)</div>
+                    <div class="text-xs text-slate-500">\(\,u_A = t_p \cdot S_{\bar{x}},\; S_{\bar{x}} = \sqrt{\frac{\sum (x_i-\bar{x})^2}{n(n-1)}}\)</div>
                   </div>
                 </div>
 
@@ -1713,12 +1713,11 @@
         // B 类标准不确定度
         const uB = finiteOrNaN(delta) ? Math.abs(delta) / Math.sqrt(3) : NaN;
 
-        const uA = n >= 2 && Number.isFinite(Sbar) ? Sbar : NaN;
-        const uC = Number.isFinite(uA) && Number.isFinite(uB) ? Math.sqrt(uA * uA + uB * uB) : NaN;
-
         const P = Number(document.getElementById("pSelect").value);
         const tp = n >= 2 ? getTp(P, n) : NaN;
-        const U = Number.isFinite(tp) && Number.isFinite(uC) ? tp * uC : NaN;
+        const uA = n >= 2 && Number.isFinite(tp) && Number.isFinite(Sbar) ? tp * Sbar : NaN;
+        const uC = Number.isFinite(uA) && Number.isFinite(uB) ? Math.sqrt(uA * uA + uB * uB) : NaN;
+        const U = uC;
         return { n, mean, Sbar, uA, uB, uC, tp, U };
       }
 
@@ -1873,7 +1872,7 @@
         const P = Number(document.getElementById("pSelect").value);
         const tp = n >= 2 ? getTp(P, n) : NaN;
 
-        const uA = Number.isFinite(Sr) ? Sr : NaN;
+        const uA = Number.isFinite(tp) && Number.isFinite(Sr) ? tp * Sr : NaN;
 
         let uB = NaN;
         if (Number.isFinite(rMean) && Number.isFinite(uV) && Number.isFinite(uI) && Number.isFinite(vMean) && Number.isFinite(iMean) && vMean !== 0 && iMean !== 0) {
@@ -1881,7 +1880,7 @@
         }
 
         const uC = ucFromUAUB(uA, uB);
-        const U = Number.isFinite(tp) && Number.isFinite(uC) ? tp * uC : NaN;
+        const U = uC;
 
         return { n, rMean, uA, uB, uC, tp, U, deltaV, uV, deltaI, uI, vMean, iMean };
       }
@@ -1994,9 +1993,9 @@
 
         document.getElementById("tpNoteInput").textContent = `已集成 t_p（P=${pPercentPlain}）与修约`;
         document.getElementById("tpNoteResult").innerHTML = `\\(t_p\\)（P=${pPercentLaTeX}）`;
-        document.getElementById("uExpLabelGeneric").innerHTML = `\\(U_{P=${pPercentLaTeX}} = t_p u_c\\)`;
+        document.getElementById("uExpLabelGeneric").innerHTML = `\\(U_{P=${pPercentLaTeX}} = u_c\\)`;
         document.getElementById("uExpLabelDensity").innerHTML = `\\(U_{P=${pPercentLaTeX}} = \\sigma_{\\rho}\\)`;
-        document.getElementById("uExpLabelVI").innerHTML = `\\(U_{P=${pPercentLaTeX}} = t_p u_c\\)`;
+        document.getElementById("uExpLabelVI").innerHTML = `\\(U_{P=${pPercentLaTeX}} = u_c\\)`;
 
         const forceSci = !!document.getElementById("forceSciToggle")?.checked;
         const theoryInput = document.getElementById("rhoTheoryInput");
